@@ -3,134 +3,441 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Echoes of Cryptalia</title>
+  <title>Echoes of Cryptalia - Community Database</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-2 { 
+      display: -webkit-box; 
+      -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical; 
+      overflow: hidden; 
+    }
+    .tooltip { position: absolute; z-index: 50; }
   </style>
 </head>
 <body>
   <div id="app"></div>
 
   <script>
+    // ============= TRANSLATIONS =============
+    const TRANSLATIONS = {
+      en: { title: "Echoes of Cryptalia", tabs: { items: "Items", abilities: "Abilities", builder: "Build Creator", builds: "Saved Builds" }, search: "Search", rarity: "Rarity", all: "All", rarities: { common: "Common", rare: "Rare" }, add: "Add", select: "Select Character", current: "Current Build", save: "Save Build", name: "Build name...", saved: "Your Builds", load: "Load", none: "No builds yet!", addItems: "Add items from Items tab", scales: "Scales with", disclaimer: "Unofficial fanmade by Cryptalia Community" },
+      pt: { title: "Echoes of Cryptalia", tabs: { items: "Itens", abilities: "Habilidades", builder: "Criar Build", builds: "Builds Salvas" }, search: "Buscar", rarity: "Raridade", all: "Todos", rarities: { common: "Comum", rare: "Raro" }, add: "Adicionar", select: "Selecione Personagem", current: "Build Atual", save: "Salvar", name: "Nome...", saved: "Suas Builds", load: "Carregar", none: "Sem builds!", addItems: "Adicione itens da aba Itens", scales: "Escala com", disclaimer: "Não-oficial pela Comunidade" },
+      es: { title: "Echoes of Cryptalia", tabs: { items: "Objetos", abilities: "Habilidades", builder: "Crear Build", builds: "Builds" }, search: "Buscar", rarity: "Rareza", all: "Todos", rarities: { common: "Común", rare: "Raro" }, add: "Añadir", select: "Selecciona Personaje", current: "Build Actual", save: "Guardar", name: "Nombre...", saved: "Tus Builds", load: "Cargar", none: "Sin builds!", addItems: "Añade objetos", scales: "Escala con", disclaimer: "No oficial por la Comunidad" }
+    };
+
+    // ============= STAT DEFINITIONS =============
+    const STATS = {
+      STR: { n: "Strength", c: "body", d: "Physical power" }, 
+      FIN: { n: "Finesse", c: "body", d: "Precision" }, 
+      PRE: { n: "Presence", c: "body", d: "Presence" }, 
+      DEX: { n: "Dexterity", c: "body", d: "Agility" }, 
+      CON: { n: "Conduction", c: "body", d: "Energy" },
+      INT: { n: "Intelligence", c: "mind", d: "Mental acuity" }, 
+      FOC: { n: "Focus", c: "mind", d: "Concentration" }, 
+      WIS: { n: "Wisdom", c: "mind", d: "Judgment" }, 
+      CLA: { n: "Clarity", c: "mind", d: "Sharpness" }, 
+      CHA: { n: "Charisma", c: "mind", d: "Personality" },
+      VOL: { n: "Volition", c: "will", d: "Willpower" }, 
+      INS: { n: "Insight", c: "will", d: "Intuition" }, 
+      COD: { n: "Code", c: "will", d: "Principles" }, 
+      TUN: { n: "Attunement", c: "will", d: "Spiritual" }, 
+      STO: { n: "Stoicism", c: "will", d: "Control" },
+      DGL: { n: "Dodge", c: "derived", d: "Avoid attacks" }, 
+      INI: { n: "Initiative", c: "derived", d: "Act first" }, 
+      PER: { n: "Perception", c: "derived", d: "Awareness" }
+    };
+
+    const CHAR_COLORS = {
+      Tsydora: { txt: 'text-yellow-400', bg: 'bg-yellow-600', brd: 'border-yellow-500' },
+      Luro: { txt: 'text-green-400', bg: 'bg-green-600', brd: 'border-green-500' },
+      OkhUr: { txt: 'text-purple-400', bg: 'bg-purple-600', brd: 'border-purple-500' },
+      Yaelie: { txt: 'text-red-400', bg: 'bg-red-600', brd: 'border-red-500' }
+    };
+
+    // ============= GAME DATA =============
     const ITEMS = [
       { id: 1, name: "Extracts of the Great Plains", desc: "Ancient essence of the plains.", rarity: "rare", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/items/Extracts%20of%20the%20Great%20Plains.png", stats: { DGL: 37, INI: 40 }, res: {} },
       { id: 2, name: "Mirrored Light", desc: "Reflects the essence of truth.", rarity: "rare", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/items/Mirrored%20Light.png", stats: { DEX: 25, STR: 15 }, res: { ICE: 10 } },
       { id: 3, name: "Volcanic Adoration", desc: "Born from the heart of fire.", rarity: "common", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/items/Volcanic%20Adoration.png", stats: { STR: 30, CON: 20 }, res: { FIRE: 15 } }
     ];
 
-    const CHARS = [
-      { id: 1, name: "Tsydora", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Tsydora.webp" },
-      { id: 2, name: "Luro", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Luro.webp" },
-      { id: 3, name: "OkhUr", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/OkhUr.webp" },
-      { id: 4, name: "Yaelie", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Yaelie.webp" }
+    const ABILITIES = [
+      { id: 101, char: "Tsydora", name: "Thunderbook Aria", desc: "Rage of thunder blow.", scales: ["CON", "FOC"], res: { ELECTRIC: 15 } },
+      { id: 102, char: "Tsydora", name: "Barricade Nocturne", desc: "Boosts HP, GRIT & DEF.", scales: ["PER"], res: { ELECTRIC: 10 } },
+      { id: 103, char: "Tsydora", name: "Attack: Heavy Weapon", desc: "Heavy weapon.", scales: ["STR", "WIS"], res: {} },
+      { id: 104, char: "Luro", name: "Perfidic Alegretto", desc: "Forces enemy back.", scales: ["PER"], res: {} },
+      { id: 105, char: "Luro", name: "Handicap Whistle", desc: "ARCANE damage strike.", scales: ["WIS", "CLA"], res: {} },
+      { id: 106, char: "Luro", name: "Attack: Ranged Weapon", desc: "Ranged weapon.", scales: ["FOC", "DEX"], res: {} },
+      { id: 107, char: "OkhUr", name: "Breaths of Winter", desc: "ICE damage.", scales: ["CHA", "VOL"], res: { ICE: 15 } },
+      { id: 108, char: "OkhUr", name: "Wind Stonepitch", desc: "Affects DEF, INI & DGL.", scales: ["PER"], res: {} },
+      { id: 109, char: "OkhUr", name: "Attack: Martial Weapon", desc: "Martial weapon.", scales: ["INS", "WIS"], res: {} },
+      { id: 110, char: "Yaelie", name: "Apotheosis Magmate", desc: "FIRE damage & burn.", scales: ["TUN", "CLA"], res: {} },
+      { id: 111, char: "Yaelie", name: "Expansive Stacatto", desc: "Heals + Fire RES.", scales: ["PER"], res: { FIRE: 15 } },
+      { id: 112, char: "Yaelie", name: "Attack: Simple Weapon", desc: "Simple weapon.", scales: ["INT", "DEX"], res: {} }
     ];
 
-    let currentTab = 'items';
-    let selectedItems = [];
-    let selectedChar = null;
+    const CHARS = [
+      { id: 1, name: "Tsydora", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Tsydora.webp", base: { STR: 38, FIN: 26, PRE: 20, DEX: 29, CON: 24, INT: 39, FOC: 50, WIS: 33, CLA: 26, CHA: 34, VOL: 33, INS: 33, COD: 27, TUN: 39, STO: 33 } },
+      { id: 2, name: "Luro", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Luro.webp", base: { STR: 35, FIN: 28, PRE: 22, DEX: 31, CON: 26, INT: 36, FOC: 48, WIS: 35, CLA: 28, CHA: 32, VOL: 30, INS: 31, COD: 25, TUN: 37, STO: 31 } },
+      { id: 3, name: "OkhUr", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/OkhUr.webp", base: { STR: 32, FIN: 24, PRE: 18, DEX: 27, CON: 22, INT: 42, FOC: 52, WIS: 38, CLA: 30, CHA: 36, VOL: 35, INS: 35, COD: 29, TUN: 41, STO: 35 } },
+      { id: 4, name: "Yaelie", img: "https://gruntzhub.github.io/cryptalia-community-db/sprites/characters/Yaelie.webp", base: { STR: 36, FIN: 27, PRE: 21, DEX: 30, CON: 25, INT: 40, FOC: 49, WIS: 36, CLA: 29, CHA: 33, VOL: 32, INS: 32, COD: 26, TUN: 38, STO: 32 } }
+    ];
 
+    // ============= STATE =============
+    let state = {
+      lang: 'en',
+      tab: 'items',
+      search: '',
+      filterRarity: 'all',
+      selectedChar: null,
+      buildItems: [],
+      builds: [],
+      buildName: ''
+    };
+
+    // ============= HELPERS =============
+    function detectLanguage() {
+      const lang = navigator.language.toLowerCase();
+      if (lang.startsWith('pt')) return 'pt';
+      if (lang.startsWith('es')) return 'es';
+      return 'en';
+    }
+
+    function loadBuilds() {
+      const saved = localStorage.getItem('cryptaliaBuilds');
+      if (saved) state.builds = JSON.parse(saved);
+    }
+
+    function saveBuilds() {
+      localStorage.setItem('cryptaliaBuilds', JSON.stringify(state.builds));
+    }
+
+    function calculateStats() {
+      if (!state.selectedChar) return {};
+      const total = { ...state.selectedChar.base };
+      state.buildItems.forEach(item => {
+        if (item.stats) {
+          Object.keys(item.stats).forEach(s => {
+            total[s] = (total[s] || 0) + item.stats[s];
+          });
+        }
+      });
+      return total;
+    }
+
+    function calculateResistances() {
+      const total = {};
+      state.buildItems.forEach(item => {
+        Object.keys(item.res || {}).forEach(r => {
+          total[r] = (total[r] || 0) + item.res[r];
+        });
+      });
+      return total;
+    }
+
+    // ============= RADAR CHART =============
+    function generateRadar(stats, category, title) {
+      const catStats = Object.entries(STATS).filter(([_, d]) => d.c === category).map(([k]) => k);
+      const m = 100, cen = 50, r = 35;
+      const ang = catStats.map((_, i) => (i * 2 * Math.PI) / catStats.length - Math.PI / 2);
+      const pts = catStats.map((s, i) => {
+        const v = stats[s] || 0;
+        const rd = (v / m) * r;
+        return { x: cen + rd * Math.cos(ang[i]), y: cen + rd * Math.sin(ang[i]), v, s };
+      });
+      const poly = pts.map(p => `${p.x},${p.y}`).join(' ');
+
+      return `
+        <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-2">
+          <h3 class="text-amber-300 font-bold text-center text-xs mb-1">${title}</h3>
+          <svg viewBox="0 0 100 100" class="w-full">
+            ${[12, 24, 35].map(rv => `
+              <polygon points="${catStats.map((_, i) => `${cen + rv * Math.cos(ang[i])},${cen + rv * Math.sin(ang[i])}`).join(' ')}" fill="none" stroke="#334155" stroke-width="0.5"/>
+            `).join('')}
+            ${ang.map((a, i) => `<line x1="${cen}" y1="${cen}" x2="${cen + r * Math.cos(a)}" y2="${cen + r * Math.sin(a)}" stroke="#334155" stroke-width="0.5"/>`).join('')}
+            <polygon points="${poly}" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+            ${pts.map((p, i) => {
+              const labelX = cen + (r + 8) * Math.cos(ang[i]);
+              const labelY = cen + (r + 8) * Math.sin(ang[i]);
+              const valueY = labelY - 5;
+              return `
+                <circle cx="${p.x}" cy="${p.y}" r="1.5" fill="#3b82f6"/>
+                <text x="${labelX}" y="${valueY}" fill="#fff" font-size="4.5" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${p.v}</text>
+                <text x="${labelX}" y="${labelY + 3}" fill="#fbbf24" font-size="5" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${p.s}</text>
+              `;
+            }).join('')}
+          </svg>
+        </div>
+      `;
+    }
+
+    // ============= ACTIONS =============
+    window.switchTab = (tab) => {
+      state.tab = tab;
+      render();
+    };
+
+    window.setLang = (lang) => {
+      state.lang = lang;
+      render();
+    };
+
+    window.setSearch = (value) => {
+      state.search = value;
+      render();
+    };
+
+    window.setFilterRarity = (value) => {
+      state.filterRarity = value;
+      render();
+    };
+
+    window.addItem = (id) => {
+      if (state.buildItems.length >= 2) return alert("Max 2 items!");
+      const item = ITEMS.find(i => i.id === id);
+      if (state.buildItems.find(i => i.id === id)) return alert("Already added!");
+      state.buildItems.push(item);
+      render();
+    };
+
+    window.removeItem = (id) => {
+      state.buildItems = state.buildItems.filter(i => i.id !== id);
+      render();
+    };
+
+    window.selectChar = (id) => {
+      state.selectedChar = CHARS.find(c => c.id === id);
+      render();
+    };
+
+    window.setBuildName = (value) => {
+      state.buildName = value;
+    };
+
+    window.saveBuild = () => {
+      if (!state.selectedChar || state.buildItems.length === 0) return alert("Select character and add items!");
+      if (!state.buildName.trim()) return alert("Name your build!");
+      state.builds.push({
+        id: Date.now(),
+        name: state.buildName,
+        character: state.selectedChar,
+        items: state.buildItems,
+        stats: calculateStats(),
+        res: calculateResistances(),
+        date: new Date().toLocaleDateString()
+      });
+      saveBuilds();
+      state.buildName = '';
+      render();
+      alert("Build saved!");
+    };
+
+    window.loadBuild = (id) => {
+      const build = state.builds.find(b => b.id === id);
+      if (build) {
+        state.selectedChar = build.character;
+        state.buildItems = build.items;
+        state.buildName = build.name;
+        state.tab = 'builder';
+        render();
+      }
+    };
+
+    window.deleteBuild = (id) => {
+      if (confirm("Delete this build?")) {
+        state.builds = state.builds.filter(b => b.id !== id);
+        saveBuilds();
+        render();
+      }
+    };
+
+    // ============= RENDER =============
     function render() {
-      const app = document.getElementById('app');
-      app.innerHTML = `
+      const t = TRANSLATIONS[state.lang];
+      const filteredItems = ITEMS.filter(i => 
+        i.name.toLowerCase().includes(state.search.toLowerCase()) && 
+        (state.filterRarity === 'all' || i.rarity === state.filterRarity)
+      );
+      const filteredAbilities = ABILITIES.filter(a => 
+        a.name.toLowerCase().includes(state.search.toLowerCase()) || 
+        a.char.toLowerCase().includes(state.search.toLowerCase())
+      );
+      const totalStats = calculateStats();
+      const totalRes = calculateResistances();
+
+      document.getElementById('app').innerHTML = `
         <div class="min-h-screen bg-gradient-to-br from-sky-400 via-blue-300 to-cyan-200 p-3">
           <div class="max-w-7xl mx-auto">
+            <!-- Header -->
             <div class="relative mb-4 p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl border-4 border-amber-500 shadow-2xl">
-              <h1 class="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">Echoes of Cryptalia</h1>
+              <div class="absolute top-2 right-2 flex gap-1">
+                ${['en', 'pt', 'es'].map(l => `
+                  <button onclick="setLang('${l}')" class="px-2 py-1 rounded text-xs font-bold ${state.lang === l ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-gray-300'}">${l.toUpperCase()}</button>
+                `).join('')}
+              </div>
+              <h1 class="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">${t.title}</h1>
+              <div class="absolute top-1 left-1 w-10 h-10 border-l-4 border-t-4 border-amber-500 opacity-50"></div>
+              <div class="absolute bottom-1 right-1 w-10 h-10 border-r-4 border-b-4 border-amber-500 opacity-50"></div>
             </div>
 
-            <div class="flex gap-2 mb-4 justify-center">
-              <button onclick="switchTab('items')" class="px-3 py-2 rounded-lg font-bold border-2 text-xs ${currentTab === 'items' ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-amber-100'}">Items</button>
-              <button onclick="switchTab('builder')" class="px-3 py-2 rounded-lg font-bold border-2 text-xs ${currentTab === 'builder' ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-amber-100'}">Build Creator</button>
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-4 justify-center flex-wrap">
+              ${['items', 'abilities', 'builder', 'builds'].map(tab => `
+                <button onclick="switchTab('${tab}')" class="px-3 py-2 rounded-lg font-bold border-2 text-xs ${state.tab === tab ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-amber-100'}">${t.tabs[tab]}</button>
+              `).join('')}
             </div>
 
-            <div id="content"></div>
+            <!-- Content -->
+            <div id="content">
+              ${state.tab === 'items' ? `
+                <!-- Items Tab -->
+                <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-3 mb-3 grid md:grid-cols-2 gap-2">
+                  <input type="text" oninput="setSearch(this.value)" placeholder="${t.search}" class="px-2 py-1 bg-slate-700 text-white rounded border border-slate-600 outline-none text-xs">
+                  <select onchange="setFilterRarity(this.value)" class="px-2 py-1 bg-slate-700 text-white rounded border border-slate-600 outline-none text-xs">
+                    <option value="all">${t.all}</option>
+                    ${Object.entries(t.rarities).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  ${filteredItems.map(i => `
+                    <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-2 flex flex-col">
+                      <img src="${i.img}" alt="${i.name}" crossorigin="anonymous" class="w-full h-16 object-contain bg-slate-700 rounded mb-1">
+                      <div class="flex justify-between items-start mb-1">
+                        <h3 class="font-bold text-amber-100 text-xs leading-tight flex-1">${i.name}</h3>
+                        <span class="text-xs px-1 py-0.5 rounded font-bold ${i.rarity === 'rare' ? 'bg-purple-600' : 'bg-gray-600'} text-white shrink-0 ml-1">${t.rarities[i.rarity][0]}</span>
+                      </div>
+                      <p class="text-gray-400 text-xs italic mb-1 line-clamp-2 flex-grow">${i.desc}</p>
+                      <div class="flex justify-between items-end gap-1 mb-1">
+                        <div class="flex-1">
+                          ${i.stats ? `<div class="flex flex-wrap gap-0.5">${Object.entries(i.stats).map(([s, v]) => `<span class="text-xs bg-blue-900/50 px-1 py-0.5 rounded text-amber-400" title="${STATS[s]?.n}: ${STATS[s]?.d}">${s}+${v}</span>`).join('')}</div>` : ''}
+                        </div>
+                        ${Object.keys(i.res || {}).length > 0 ? `<div class="flex flex-col gap-0.5">${Object.entries(i.res).map(([r, v]) => `<span class="text-xs bg-green-700 text-white px-1 py-0.5 rounded whitespace-nowrap">${r}+${v}</span>`).join('')}</div>` : ''}
+                      </div>
+                      <button onclick="addItem(${i.id})" class="w-full bg-amber-500 text-slate-900 font-bold py-1 rounded text-xs flex items-center justify-center gap-1">+ ${t.add}</button>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : state.tab === 'abilities' ? `
+                <!-- Abilities Tab -->
+                <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-3 mb-3">
+                  <input type="text" oninput="setSearch(this.value)" placeholder="${t.search}" class="w-full px-2 py-1 bg-slate-700 text-white rounded border border-slate-600 outline-none text-xs">
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  ${filteredAbilities.map(a => {
+                    const col = CHAR_COLORS[a.char];
+                    return `
+                      <div class="bg-slate-800 border-2 ${col.brd} rounded-lg p-2 flex flex-col">
+                        <div class="flex justify-between items-start mb-1">
+                          <h3 class="font-bold ${col.txt} text-xs leading-tight flex-1">${a.name}</h3>
+                          <span class="text-xs px-1 py-0.5 rounded font-bold ${col.bg} text-white shrink-0 ml-1">${a.char[0]}</span>
+                        </div>
+                        <p class="text-gray-400 text-xs italic mb-1 line-clamp-2 flex-grow">${a.desc}</p>
+                        <div class="flex justify-between items-end gap-1">
+                          <div class="flex-1">
+                            <p class="text-amber-300 font-bold text-xs mb-0.5">${t.scales}:</p>
+                            <div class="flex flex-wrap gap-0.5">${a.scales.map(s => `<span class="text-xs bg-purple-900/50 px-1 py-0.5 rounded text-purple-300" title="${STATS[s]?.n}: ${STATS[s]?.d}">${s}</span>`).join('')}</div>
+                          </div>
+                          ${Object.keys(a.res || {}).length > 0 ? `<div class="flex flex-col gap-0.5">${Object.entries(a.res).map(([r, v]) => `<span class="text-xs bg-green-700 text-white px-1 py-0.5 rounded whitespace-nowrap">${r}+${v}</span>`).join('')}</div>` : ''}
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : state.tab === 'builder' ? `
+                <!-- Builder Tab -->
+                <div class="space-y-3">
+                  <div>
+                    <h2 class="text-lg font-bold text-slate-800 mb-2">${t.select}</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      ${CHARS.map(c => `
+                        <button onclick="selectChar(${c.id})" class="p-2 rounded-lg border-2 ${state.selectedChar?.id === c.id ? 'bg-amber-500 border-amber-600' : 'bg-slate-800 border-slate-700'}">
+                          <img src="${c.img}" alt="${c.name}" crossorigin="anonymous" class="w-full h-20 object-contain mb-1">
+                          <h3 class="font-bold text-white text-xs">${c.name}</h3>
+                        </button>
+                      `).join('')}
+                    </div>
+                  </div>
+
+                  ${state.selectedChar ? `
+                    <div class="grid grid-cols-3 gap-2">
+                      ${generateRadar(totalStats, 'body', 'BODY')}
+                      ${generateRadar(totalStats, 'mind', 'MIND')}
+                      ${generateRadar(totalStats, 'will', 'WILL')}
+                    </div>
+                  ` : ''}
+
+                  <div class="grid lg:grid-cols-2 gap-3">
+                    <div>
+                      <h2 class="text-lg font-bold text-slate-800 mb-2">${t.current} (${state.buildItems.length}/2)</h2>
+                      <div class="space-y-1 mb-2">
+                        ${state.buildItems.map(i => `
+                          <div class="bg-slate-800 border border-amber-500 rounded p-1 flex justify-between items-center">
+                            <div>
+                              <h4 class="font-bold text-amber-100 text-xs">${i.name}</h4>
+                              <p class="text-xs text-gray-400">Item</p>
+                            </div>
+                            <button onclick="removeItem(${i.id})" class="text-red-400 text-xs">×</button>
+                          </div>
+                        `).join('')}
+                        ${state.buildItems.length === 0 ? `<div class="text-center py-6 text-gray-600 bg-slate-800 rounded border border-dashed text-xs">${t.addItems}</div>` : ''}
+                      </div>
+                      ${state.buildItems.length > 0 ? `
+                        <div>
+                          <input type="text" oninput="setBuildName(this.value)" value="${state.buildName}" placeholder="${t.name}" class="w-full px-2 py-1 bg-slate-700 text-white rounded border border-slate-600 mb-1 outline-none text-xs">
+                          <button onclick="saveBuild()" class="w-full bg-green-600 text-white font-bold py-1 rounded text-xs">💾 ${t.save}</button>
+                        </div>
+                      ` : ''}
+                    </div>
+                    ${state.selectedChar && Object.keys(totalRes).length > 0 ? `
+                      <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-2">
+                        <h3 class="font-bold text-amber-300 mb-1 text-xs">Resistances</h3>
+                        ${Object.entries(totalRes).map(([r, v]) => `
+                          <div class="flex justify-between text-xs mb-0.5">
+                            <span class="text-green-400">${r}</span>
+                            <span class="font-bold text-white">+${v}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : `
+                <!-- Builds Tab -->
+                <div>
+                  <h2 class="text-lg font-bold text-slate-800 mb-2">${t.saved} (${state.builds.length})</h2>
+                  ${state.builds.length === 0 ? `
+                    <div class="text-center py-12 bg-slate-800 rounded-lg border-2 border-dashed text-gray-400 text-sm">${t.none}</div>
+                  ` : `
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      ${state.builds.map(b => `
+                        <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-2">
+                          <div class="flex justify-between mb-1">
+                            <div>
+                              <h3 class="font-bold text-amber-100 text-sm">${b.name}</h3>
+                              <p class="text-xs text-gray-400">${b.character.name} • ${b.date}</p>
+                            </div>
+                            <button onclick="deleteBuild(${b.id})" class="text-red-400 text-xs">×</button>
+                          </div>
+                          <button onclick="loadBuild(${b.id})" class="w-full bg-purple-600 text-white font-bold py-1 rounded text-xs">${t.load}</button>
+                        </div>
+                      `).join('')}
+                    </div>
+                  `}
+                </div>
+              `}
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-slate-800 text-xs mt-6 opacity-60">${t.disclaimer}</div>
           </div>
         </div>
       `;
-
-      renderContent();
     }
 
-    function renderContent() {
-      const content = document.getElementById('content');
-      
-      if (currentTab === 'items') {
-        content.innerHTML = `
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            ${ITEMS.map(item => `
-              <div class="bg-slate-800 border-2 border-amber-500 rounded-lg p-2">
-                <img src="${item.img}" alt="${item.name}" crossorigin="anonymous" class="w-full h-16 object-contain bg-slate-700 rounded mb-1">
-                <h3 class="font-bold text-amber-100 text-xs mb-1">${item.name}</h3>
-                <p class="text-gray-400 text-xs italic mb-1 line-clamp-2">${item.desc}</p>
-                <div class="flex gap-1 mb-2 flex-wrap">
-                  ${Object.entries(item.stats).map(([k, v]) => `<span class="text-xs bg-blue-900/50 px-1 py-0.5 rounded text-amber-400">${k}+${v}</span>`).join('')}
-                  ${Object.entries(item.res || {}).map(([k, v]) => `<span class="text-xs bg-green-700 px-1 py-0.5 rounded text-white">${k}+${v}</span>`).join('')}
-                </div>
-                <button onclick="addItem(${item.id})" class="w-full bg-amber-500 text-slate-900 font-bold py-1 rounded text-xs">+ Add</button>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      } else {
-        content.innerHTML = `
-          <div class="space-y-4">
-            <div>
-              <h2 class="text-lg font-bold text-slate-800 mb-2">Select Character</h2>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                ${CHARS.map(char => `
-                  <button onclick="selectChar(${char.id})" class="p-2 rounded-lg border-2 ${selectedChar?.id === char.id ? 'bg-amber-500' : 'bg-slate-800'}">
-                    <img src="${char.img}" alt="${char.name}" crossorigin="anonymous" class="w-full h-20 object-contain mb-1">
-                    <h3 class="font-bold text-white text-xs">${char.name}</h3>
-                  </button>
-                `).join('')}
-              </div>
-            </div>
-
-            <div>
-              <h2 class="text-lg font-bold text-slate-800 mb-2">Current Build (${selectedItems.length}/2)</h2>
-              <div class="space-y-2">
-                ${selectedItems.length === 0 ? '<p class="text-center py-6 bg-slate-800 rounded text-gray-400 text-xs">Add items from Items tab</p>' : ''}
-                ${selectedItems.map(item => `
-                  <div class="bg-slate-800 border border-amber-500 rounded p-2 flex justify-between items-center">
-                    <div>
-                      <h4 class="font-bold text-amber-100 text-xs">${item.name}</h4>
-                      <p class="text-xs text-gray-400">Item</p>
-                    </div>
-                    <button onclick="removeItem(${item.id})" class="text-red-400 text-xs">Remove</button>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      render();
-    }
-
-    function addItem(id) {
-      if (selectedItems.length >= 2) return alert('Max 2 items!');
-      const item = ITEMS.find(i => i.id === id);
-      if (selectedItems.find(i => i.id === id)) return alert('Already added!');
-      selectedItems.push(item);
-      render();
-    }
-
-    function removeItem(id) {
-      selectedItems = selectedItems.filter(i => i.id !== id);
-      render();
-    }
-
-    function selectChar(id) {
-      selectedChar = CHARS.find(c => c.id === id);
-      render();
-    }
-
-    // Inicializa
+    // ============= INIT =============
+    state.lang = detectLanguage();
+    loadBuilds();
     render();
   </script>
 </body>
